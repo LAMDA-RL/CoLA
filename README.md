@@ -1,11 +1,11 @@
-# Learning **L**atent **A**ction Language World **M**odel from **P**re-Trained LLM (LAMP)
+# Controlling large langauge model with Latent Action (Llama-3.1-CoLA)
 
-This repository provides the training code of LAMP, which consists of three components:
+This repository provides the pre-trained inverse dynamics models, world models and BC policy model of CoLA, based on Llama-3.1-8B-base:
 * **Language World Model**: This model has an action space of 64 actions and generates language based on these actions.
 * **Inverse Dynamics Model**: This model derives actions from input sentences, essentially "understanding" the language.
 * **Policy Model**: This model is training to output actions that simulate the language data used in training.
 
-The LAMP model follows the same learning process as the BWArea model in the paper "BWArea Model: Learning World Model, Inverse Dynamics, and Policy for Controllable Language Generation." (https://huggingface.co/jiacx0229/intention_pretrained_2.7B_30G). However, it is based on a pre-trained autoregressive model to provide pre-trained embeddings. In this version, we use the embeddings from the final block of Llama-3.1-8B as the input embedding for each module in LAMP. Compared to the BWArea model with 2.7B parameters, the LAMP model has a larger parameter size of 11B, which includes 8B for Llama-3.1-8B, 1B for the inverse dynamics model and world model, and 2B for the policy model. Additionally, the LAMP model has been pre-trained on a larger dataset with nearly 1.1T tokens, encompassing general corpora, math, and code. The corpus includes both English and Chinese.
+The Llama-3.1-10B-CoLA model follows the same learning process as the BWArea model in the paper "BWArea Model: Learning World Model, Inverse Dynamics, and Policy for Controllable Language Generation." (https://huggingface.co/jiacx0229/intention_pretrained_2.7B_30G). However, it is based on a pre-trained autoregressive model to provide pre-trained embeddings. In this version, we use the embeddings from the final block of Llama-3.1-8B as the input embedding for each module in CoLA. Compared to the BWArea model with 2.7B parameters, the CoLA model has a larger parameter size of 11B, which includes 8B for Llama-3.1-8B, 1B for the inverse dynamics model and world model, and 2B for the policy model. Additionally, the CoLA model has been pre-trained on a larger dataset with nearly 1.1T tokens, encompassing general corpora, math, and code. The corpus includes both English and Chinese.
 
 ## Dataset
 
@@ -17,13 +17,10 @@ The dataset used in this project is sourced from the following repositories:
 
 The dataset totally contains 1.1T tokens. For inverse dynamics model and language world model, they are trained on the whole dataset and for the policy model, the released version is trained on 640G tokens of dataset.
 
-## Pre-trained Model
-
-https://huggingface.co/LAMDA-RL/intention_pretrained_10B
 
 ## Latent Action Control
 
-The LAMP model is designed to extract language actions from a pre-trained model. The extracted latent actions represent distinct semantic meanings of language, providing a higher-level generation compared to the token space, where the combination of tokens may not necessarily form a valid sentence. We hypothesize that generating sentences using latent action tokens can result in greater diversity and higher quality compared to token-space sampling. 
+The CoLA model is designed to extract language actions from a pre-trained model. The extracted latent actions represent distinct semantic meanings of language, providing a higher-level generation compared to the token space, where the combination of tokens may not necessarily form a valid sentence. We hypothesize that generating sentences using latent action tokens can result in greater diversity and higher quality compared to token-space sampling. 
 
 To evaluate this, we employ the **BGE-M3 model** (https://huggingface.co/BAAI/bge-m3), which outputs sentence embeddings to compute semantic similarity between different sentences. Semantic similarity serves as a metric to assess quality diversity. When the semantic similarity between generated sentences is higher, it indicates lower quality diversity. While random token sampling can produce very different sequences, this does not necessarily result in lower semantic similarity because it often fails to generate valid sentences.
 
@@ -37,21 +34,21 @@ To compute quality diversity, we follow these steps:
 
 The results are as follows:
 
+| Method                                   | Quality Diversity (Avg) | Semantic Similarity (Avg) |
+|------------------------------------------|-------------------------|---------------------------|
+| Latent Action Sampling (Llama-3.1-CoLA)  | 1.92                    | 0.52                      |
+| Token Space Sampling (Llama-3.1-base)    | 1.54                    | 0.65                      |
+| Random Token Sampling                    | 1.30                    | 0.77                      |
+
+where Latent Action Sampling is using our world model and random action tokens to generate sentence, Token Sapce Sampling is using Lllama-3.1-8B-base logits to generate and Random Token Sampling is random token sequence. This show that the latent action control can derive a higher quality diversity (QD).
+
+We also show that as the training tokens growing, CoLA's world model can generate sentences with larger QD:
+
 | Method                            | Quality Diversity (Avg) | Semantic Similarity (Avg) |
 |-----------------------------------|-------------------------|---------------------------|
-| Latent Action Sampling (LAMP-wm)  | 1.92                    | 0.52                      |
-| Token Space Sampling (Llama-3.1)  | 1.54                    | 0.65                      |
-| Random Token Sampling             | 1.30                    | 0.77                      |
-
-where Latent Action Sampling is using our world model and random action tokens to generate sentence, Token Sapce Sampling is using Lllama-3.1-8B logits to generate and Random Token Sampling is random token sequence. This show that the latent action control can derive a higher quality diversity (QD).
-
-We also show that as the training tokens growing, LAMP world model can generate sentences with larger QD:
-
-| Method                            | Quality Diversity (Avg) | Semantic Similarity (Avg) |
-|-----------------------------------|-------------------------|---------------------------|
-| Latent Action Sampling (LAMP 1.1T)| 1.92                    | 0.52                      |
-| Latent Action Sampling (LAMP-10G) | 1.67                    | 0.60                      |
-| Latent Action Sampling (LAMP-1G)  | 1.45                    | 0.69                      |
+| Latent Action Sampling (CoLA-1.1T)| 1.92                    | 0.52                      |
+| Latent Action Sampling (CoLA-10G) | 1.67                    | 0.60                      |
+| Latent Action Sampling (CoLA-1G)  | 1.45                    | 0.69                      |
 
 where 1.1T, 10G and 1G are the number of training tokens, implies the growing QD with larger number of tokens.
 
@@ -114,7 +111,7 @@ action_index = action_logits[, -1].argmax(dim=1, keepdim=True)
 ### Sentence Generation
 
 ```python
-# This example uses the LAMP as a common LLM for language generation.
+# This example uses the CoLA as a common LLM for language generation.
 model.set_action_sampling(greedy=False, tau=2.0)  # greedy=True for deterministic action, tau for temperature of action 
 prompt = "I like eating"
 inputs = tokenizer(prompt, return_tensors='pt')
