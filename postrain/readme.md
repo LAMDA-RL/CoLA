@@ -17,8 +17,9 @@ bash ./examples/scripts/intention-3.1-8b-v1/train_sft_stage_intention3.1.sh
 bash ./examples/scripts/intention-3.1-8b-v1/train_rm_llama3.1.sh
 ```
 
-## Train GRPO
+## Train RL
 
 ```
+bash ./examples/scripts/intention-3.1-8b-v1/train_remax_intention3.1.sh
 bash ./examples/scripts/intention-3.1-8b-v1/train_grpo_intention3.1.sh
 ```
